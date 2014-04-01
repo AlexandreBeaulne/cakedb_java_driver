@@ -26,7 +26,7 @@ public class Driver {
 
 	//id map
 	private HashMap<String, Short> streamIDs = new HashMap<String, Short>();
-	
+
 	//query types (see cake_protocol.erl)
 	private static final int DB_NOOP = 0;
 	private static final int DB_REQUEST_STREAM_WITH_SIZE = 1;
@@ -39,9 +39,9 @@ public class Driver {
 	private static final int SIZE_SHORT = Short.SIZE/8;
 	private static final int SIZE_INT = Integer.SIZE/8;
 	private static final int SIZE_LONG = Long.SIZE/8;
-	
-	
-	/** 
+
+
+	/**
 	 * Create a connection to the CakeDB server at this host/port.
 	 * @param hostName
 	 * @param port
@@ -49,19 +49,19 @@ public class Driver {
 	 * @throws IOException
 	 */
 	public Driver(String hostName,int port) throws UnknownHostException, IOException {
-		
+
 		this.serverHost = hostName;
-		this.serverPort = port;		
-		
+		this.serverPort = port;
+
 		reconnect();
 	}
-	
+
 	/**
 	 * Reconnect socket connection to the CakeDB server. Useful in case the socket
 	 * connection fails for any reason.
 	 */
 	public void reconnect() throws UnknownHostException, IOException {
-		
+
 		// Try clean shutdown of old socket if needed
 		if(clientSocket != null)
 		{
@@ -70,7 +70,7 @@ public class Driver {
 			} catch(IOException e)
 			{}
 		}
-		
+
 		// Reconnect socket and related streams
 		clientSocket = new Socket(serverHost, serverPort);
 		outToServer  = new DataOutputStream(clientSocket.getOutputStream());
@@ -78,10 +78,10 @@ public class Driver {
 	}
 
 	/**
-	 * Helper method to store a string. Equivalent to 
+	 * Helper method to store a string. Equivalent to
 	 * <pre>
 	 * store(streamName, payload.getBytes());
-	 * </pre> 
+	 * </pre>
 	 */
 	public void store(String streamName,String payload) throws IOException {
 
@@ -95,20 +95,20 @@ public class Driver {
 	 * @throws IOException
 	 */
 	public synchronized void store(String streamName,byte[] payload) throws IOException {
-		
+
 		short streamID = getStreamID(streamName); 	        // Get Stream ID
 		int payloadLength = SIZE_SHORT + payload.length;  	// Calculate message length
-		short op = DB_APPEND; 					            // Set operation		
+		short op = DB_APPEND; 					            // Set operation
 
-		writeHeader(payloadLength, op);		
+		writeHeader(payloadLength, op);
 		outToServer.writeShort(streamID);
 		outToServer.write(payload);
 		outToServer.flush();
 	}
 
 	/**
-	 * Standard header is a 4-byte contents length, followed by 2-byte message type  
-	 * @throws IOException 
+	 * Standard header is a 4-byte contents length, followed by 2-byte message type
+	 * @throws IOException
 	 */
 	private void writeHeader(int payloadLength, short operation) throws IOException {
 		outToServer.writeInt(payloadLength);
@@ -124,9 +124,9 @@ public class Driver {
 	 * @throws IOException
 	 */
 	public synchronized List<Event> rangeQuery(String streamName,long from, long to) throws IOException {
-		
+
 		short streamID = getStreamID(streamName);			// Get Stream ID
-		short op = DB_QUERY;								
+		short op = DB_QUERY;
 
 		//send query
 		writeHeader(SIZE_SHORT + SIZE_LONG + SIZE_LONG, op);
@@ -134,14 +134,14 @@ public class Driver {
 		outToServer.writeLong(from);
 		outToServer.writeLong(to);
 		outToServer.flush();
-		
+
 		// Get the incoming stream length
-		int length = inFromServer.readInt();	
-				
+		int length = inFromServer.readInt();
+
 		//create a buffer & read in rest of stream
 		byte[] buf = new byte[length];
 		inFromServer.readFully(buf);
-		
+
 		return extractData(buf);
 	}
 
@@ -149,26 +149,26 @@ public class Driver {
 	 * Extract a list of events from a data buffer
 	 */
 	private List<Event> extractData(byte[] buf) {
-		
+
 		ArrayList<Event> list = new ArrayList<Event>();
-		
+
 		//iterate through buffer, pulling out events
 		ByteBuffer x = ByteBuffer.wrap(buf);
 		while(x.hasRemaining()){
 
 			long timestamp = x.getLong();
 			int recordLength = x.getInt();
-			
+
 			byte[] temp = new byte[recordLength];
 			x.get(temp, 0, recordLength);
-			
+
 			Event event = new Event(timestamp,temp);
-			list.add(event);			
+			list.add(event);
 		}
-		
+
 		return(list);
 	}
-	
+
 	/**
 	 * Return all events since this time
 	 * @param streamName
@@ -177,9 +177,9 @@ public class Driver {
 	 * @throws IOException
 	 */
 	public synchronized List<Event> allSinceQuery(String streamName,long from) throws IOException {
-		
+
 		short streamID = getStreamID(streamName);			// Get Stream ID
-		short op = DB_ALL_SINCE;								
+		short op = DB_ALL_SINCE;
 
 		//send query
 		writeHeader(SIZE_SHORT + SIZE_LONG, op);
@@ -188,13 +188,13 @@ public class Driver {
 		outToServer.flush();
 
 		// Get the incoming stream length
-		int length = inFromServer.readInt();	
-		
-				
+		int length = inFromServer.readInt();
+
+
 		//create a buffer & read in rest of stream
 		byte[] buf = new byte[length];
 		inFromServer.readFully(buf);
-		
+
 		return extractData(buf);
 
 	}
@@ -208,9 +208,9 @@ public class Driver {
 	 * @throws IOException
 	 */
 	public synchronized Event lastEntryAt(String streamName,long at) throws IOException {
-		
+
 		short streamID = getStreamID(streamName);			// Get Stream ID
-		short op = DB_LAST_ENTRY_AT;								
+		short op = DB_LAST_ENTRY_AT;
 
 		//send query
 		writeHeader(SIZE_SHORT + SIZE_LONG, op);
@@ -219,15 +219,15 @@ public class Driver {
 		outToServer.flush();
 
 		// Get the incoming stream length
-		int length = inFromServer.readInt();	
-		
-				
+		int length = inFromServer.readInt();
+
+
 		//create a buffer & read in rest of stream
 		byte[] buf = new byte[length];
 		inFromServer.readFully(buf);
 
                 List<Event> data = extractData(buf);
-		
+
 		return (data.size() > 0) ? data.get(0) : null;
 
 	}
@@ -257,10 +257,10 @@ public class Driver {
 	private short getStreamIDFromServer(String streamName) throws IOException {
 
 		int payloadLength = streamName.length();				// Calculate length of message
-		short op = DB_REQUEST_STREAM;		
+		short op = DB_REQUEST_STREAM;
 
 		//send request for this stream name
-		writeHeader(payloadLength, op);		
+		writeHeader(payloadLength, op);
 		outToServer.write(streamName.getBytes());
 		outToServer.flush();
 

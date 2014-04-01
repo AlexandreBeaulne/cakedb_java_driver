@@ -11,23 +11,23 @@ public class UnitTestDriver {
 
 	@Test
 	public void test() {
-		
+
 		Driver driver;
 		try {
 
 			//Cake server to test
 			String cakeHost = "127.0.0.1";
 			int cakePort = 8888;
-			
+
 			//get time from a while back, in case clocks arent quite in sync
 			long start = new Date().getTime() - (60 * 60 * 1000);
-			
+
 			//generate random stream name
 			String teststream = "teststream" + start;
-			
+
 			//connect
 			driver = new Driver(cakeHost, cakePort);
-			
+
 			//## driver.store()
 			driver.store(teststream, "Hello World");
 
@@ -37,14 +37,14 @@ public class UnitTestDriver {
 			//## driver.allSinceQuery()
 			List<Event> events = driver.allSinceQuery(teststream, start); 			//get events
 			assertEquals(1, events.size());
-			
+
 			//check payload
 			String payload = new String(events.get(0).payload);
 			assertEquals("Hello World", payload);
-			
+
 			//insert 99 more documents
 			for(int a=0;a<99;a++){
-				driver.store(teststream,"Hello World " + a);				
+				driver.store(teststream,"Hello World " + a);
 			}
 
 			//wait a bit, because Cake doesnt flush straight away
@@ -85,7 +85,7 @@ public class UnitTestDriver {
 			e.printStackTrace();
 			fail(e.getMessage());
 		}
-		
+
 	}
 
 }
