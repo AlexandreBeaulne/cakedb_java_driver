@@ -1,4 +1,4 @@
-package org.cakedb.drivers.java;
+package org.cakedb.drivers;
 
 /**
  * Holds event data from Cake. This consists of a timestamp & payload pair.

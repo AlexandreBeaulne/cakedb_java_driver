@@ -1,4 +1,4 @@
-package org.cakedb.drivers.java;
+package org.cakedb.drivers;
 
 import static org.junit.Assert.*;
 

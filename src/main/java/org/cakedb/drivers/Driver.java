@@ -1,4 +1,4 @@
-package org.cakedb.drivers.java;
+package org.cakedb.drivers;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
